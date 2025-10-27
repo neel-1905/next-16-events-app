@@ -1,8 +1,14 @@
 import EventCard from "@/components/EventCard";
 import ExploreBtn from "@/components/ExploreBtn";
+import { IEvent } from "@/database/event.model";
 import { events } from "@/lib/constants";
 
-const Home = () => {
+const Home = async () => {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events`
+  );
+  const { data } = await response.json();
+
   return (
     <section id="home">
       <h1 className="text-center capitalize">
@@ -18,9 +24,9 @@ const Home = () => {
         <h3>Featured Events</h3>
 
         <ul className="events list-none">
-          {events.map((item) => (
+          {data.map((event: IEvent) => (
             <li key={crypto.randomUUID()}>
-              <EventCard {...item} />
+              <EventCard {...event} />
             </li>
           ))}
         </ul>
