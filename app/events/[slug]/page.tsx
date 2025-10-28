@@ -1,3 +1,7 @@
+import BookEvent from "@/components/BookEvent";
+import EventCard from "@/components/EventCard";
+import { IEvent } from "@/database/event.model";
+import { getSimilarEventsBySlug } from "@/lib/actions/event.actions";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 
@@ -20,7 +24,7 @@ const EventAgenda = ({ agendaItems }: { agendaItems: string[] }) => (
   <section className="agenda">
     <h2>Agenda</h2>
     <ul className="">
-      {agendaItems.map((item, index) => (
+      {agendaItems?.map((item, index) => (
         <li key={index}>{item}</li>
       ))}
     </ul>
@@ -43,7 +47,12 @@ const page = async ({ params }: { params: Promise<{ slug: string }> }) => {
   console.log(slug);
 
   const request = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${slug}`
+    `${process.env.NEXT_PUBLIC_BASE_URL}/api/events/${slug}`,
+    {
+      next: {
+        revalidate: 60,
+      },
+    }
   );
   const { data } = await request.json();
   const {
@@ -63,6 +72,10 @@ const page = async ({ params }: { params: Promise<{ slug: string }> }) => {
   } = data;
 
   if (!description) notFound();
+
+  const bookings = 10;
+
+  const similarEvents = await getSimilarEventsBySlug(slug);
 
   return (
     <section id="event">
@@ -113,20 +126,41 @@ const page = async ({ params }: { params: Promise<{ slug: string }> }) => {
             />
           </section>
 
-          <EventAgenda agendaItems={JSON.parse(agenda[0])} />
+          <EventAgenda agendaItems={agenda} />
 
           <section className="flex-col-gap-2">
             <h2>About the Organizer</h2>
             <p>{organizer}</p>
           </section>
 
-          <EventTags tags={JSON.parse(tags[0])} />
+          <EventTags tags={tags} />
         </div>
 
         {/* right side */}
         <aside className="booking">
-          <p className="text-lg font-semibold">Book Event</p>
+          <div className="signup-card">
+            <h2>Book Your Spot</h2>
+
+            {bookings > 0 ? (
+              <p className="text-sm">
+                Join {bookings} people who have already booked their spot!
+              </p>
+            ) : (
+              <p className="text-sm">Be the First to Book Your Spot!</p>
+            )}
+
+            <BookEvent />
+          </div>
         </aside>
+      </div>
+
+      <div className="flex w-full flex-col gap-4 pt-20">
+        <div className="events">
+          {similarEvents?.length > 0 &&
+            similarEvents.map((event) => (
+              <EventCard key={event.slug} {...event} />
+            ))}
+        </div>
       </div>
     </section>
   );
